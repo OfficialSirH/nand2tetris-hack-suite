@@ -3,5 +3,22 @@
 version = 4
 
 [[package]]
-name = "hack_assembler"
+name = "assembler"
+version = "0.1.0"
+
+[[package]]
+name = "compiler"
+version = "0.1.0"
+
+[[package]]
+name = "hack"
+version = "0.1.0"
+dependencies = [
+ "assembler",
+ "compiler",
+ "vm_translator",
+]
+
+[[package]]
+name = "vm_translator"
 version = "0.1.0"

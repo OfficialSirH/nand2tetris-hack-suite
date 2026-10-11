@@ -57,8 +57,8 @@
               rustc = pkgs.rustToolchain;
             }).buildRustPackage
               {
-                pname = "hack_assembler";
-                version = "0.0.1";
+                pname = "hack-suite";
+                version = "0.1.0";
                 src = ./.;
                 cargoLock.lockFile = ./Cargo.lock;
 

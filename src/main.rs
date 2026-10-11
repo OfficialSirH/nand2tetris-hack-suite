@@ -2,64 +2,69 @@ use std::{
     env::Args,
     fs::File,
     io::{BufWriter, Read, Write},
+    process::exit,
 };
 
-use crate::tokenizer::Tokenizer;
-
-mod code;
-mod parser;
-mod tokenizer;
-mod tokens;
-mod utils;
-
-const DEFAULT_INPUT_NAME: &'static str = "prog.asm";
-const DEFAULT_OUTPUT_NAME: &'static str = "prog.hack";
+const ASSEMBLE: &'static str = "assemble";
+const TRANSLATE: &'static str = "translate";
+const COMPILE: &'static str = "compile";
 
 fn main() {
-    // Read arguments: hack_assembler prog.asm prog.hack
     let args = std::env::args();
-    let (input_name, output_name) = get_args(args);
-    let asm = get_file_contents(input_name);
-    // Send file contents to tokenizer
-    let mut tokenizer = Tokenizer::new();
-    let tokenized_asm = tokenizer.tokenize(asm);
-    // Send tokenized contents to parser
-    let parsed_asm = parser::parse(tokenized_asm);
-    // Send parsed contents to code generation
-    let generated_code = code::generate(parsed_asm);
-    // // Write generated code to prog.hack
-    write_code_to_file(output_name, generated_code);
+    let (input_name, output_name, execute) = get_program_actions(get_args(args));
+    let assembly = get_file_contents(input_name);
+    let bytes = execute(assembly);
+    write_code_to_file(output_name, bytes);
 }
 
-fn write_code_to_file(output_name: String, generated_code: Vec<u8>) {
+fn get_program_actions(
+    (program, input_name, output_name): (String, Option<String>, Option<String>),
+) -> (String, String, fn(Vec<String>) -> Vec<u8>) {
+    let get_program_action =
+        |input_default: &str, output_default: &str, executor: fn(Vec<String>) -> Vec<u8>| {
+            (
+                input_name.unwrap_or(input_default.to_owned()),
+                output_name.unwrap_or(output_default.to_owned()),
+                executor,
+            )
+        };
+    // TODO: All program functions should output Vec<String> as transformation to their
+    // bytes for file writing should only be done after desired steps are done
+    match program.as_str() {
+        ASSEMBLE => get_program_action(
+            assembler::DEFAULT_INPUT_NAME,
+            assembler::DEFAULT_OUTPUT_NAME,
+            assembler::assemble,
+        ),
+        TRANSLATE => get_program_action(
+            vm_translator::DEFAULT_INPUT_NAME,
+            vm_translator::DEFAULT_OUTPUT_NAME,
+            vm_translator::translate,
+        ),
+        COMPILE => get_program_action(
+            compiler::DEFAULT_INPUT_NAME,
+            compiler::DEFAULT_OUTPUT_NAME,
+            compiler::compile,
+        ),
+        _ => {
+            println!("Invalid program");
+            exit(1);
+        }
+    }
+}
+
+fn write_code_to_file(output_name: String, bytes: Vec<u8>) {
     let mut file = BufWriter::new(File::create(output_name).expect("Failed to create file"));
-    let hack_format = code_to_file_format(generated_code);
-    file.write_all(&hack_format)
+    file.write_all(&bytes)
         .expect("Failed to write buffer to file");
 }
 
-/// This function is to convert my beautiful bytes of binary to
-/// this goofy file format that the Hack CPU Emulator can understand
-/// because for some reason they made the emulator require the
-/// instructions to be separated by newlines
-fn code_to_file_format(code: Vec<u8>) -> Vec<u8> {
-    code.chunks_exact(2)
-        .map(|word| match word {
-            [lbyte, rbyte] => format!("{lbyte:08b}{rbyte:08b}"),
-            _ => unreachable!(
-                "These are exact chunks and can't ever provide more nor less than 2 elements"
-            ),
-        })
-        .collect::<Vec<String>>()
-        .join("\n")
-        .into_bytes()
-}
-
-fn get_file_contents(input_name: String) -> Vec<String> {
-    let mut file = get_file(input_name);
+fn get_file_contents(name: String) -> Vec<String> {
+    let mut file = get_file(name);
 
     let mut content = String::new();
-    let _ = file.read_to_string(&mut content);
+    file.read_to_string(&mut content)
+        .expect("The file's contents must be valid UTF-8");
     let content = content.replace(" ", "");
     let only_asm =
         |line: &str| (!(line.starts_with("//") || line.is_empty())).then_some(line.to_owned());
@@ -68,16 +73,15 @@ fn get_file_contents(input_name: String) -> Vec<String> {
     lines.collect()
 }
 
-fn get_file(input_name: String) -> File {
-    let expectation = format!("No file by the name of {input_name}");
-    let file = File::open(input_name).expect(expectation.as_str());
+fn get_file(name: String) -> File {
+    let expectation = format!("No file by the name of {name}");
+    let file = File::open(name).expect(expectation.as_str());
     file.lock().unwrap();
 
     file
 }
 
-fn get_args(args: Args) -> (String, String) {
+fn get_args(args: Args) -> (String, Option<String>, Option<String>) {
     let mut args = args.skip(1);
-    let mut get_arg = |fallback: &str| args.next().unwrap_or(fallback.to_owned());
-    (get_arg(DEFAULT_INPUT_NAME), get_arg(DEFAULT_OUTPUT_NAME))
+    (args.next().expect("An input for the form of transforming (assemble, translate, compile) needs to be given"), args.next(), args.next())
 }
