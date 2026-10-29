@@ -1,9 +1,3 @@
-[package]
-name = "hack"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-assembler = { path = "assembler" }
-vm_translator = { path = "vm_translator" }
-compiler = { path = "compiler" }
+[workspace]
+resolver = "3"
+members = ["hack_suite", "tokenizer", "assembler", "vm_translator", "compiler", "utils"]

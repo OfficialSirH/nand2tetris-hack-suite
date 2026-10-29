@@ -20,5 +20,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokenizer"
+version = "0.1.0"
+
+[[package]]
+name = "utils"
+version = "0.1.0"
+
+[[package]]
 name = "vm_translator"
 version = "0.1.0"
+dependencies = [
+ "utils",
+]

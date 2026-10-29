@@ -7,7 +7,7 @@ pub mod utils;
 pub const DEFAULT_INPUT_NAME: &'static str = "prog.asm";
 pub const DEFAULT_OUTPUT_NAME: &'static str = "prog.hack";
 
-pub fn assemble(assembly: Vec<String>) -> Vec<u8> {
+pub fn assemble(assembly: Vec<String>) -> Vec<String> {
     let mut tokenizer = tokenizer::Tokenizer::new();
     let tokens = tokenizer.tokenize(assembly);
     let parsed_tokens = parser::parse(tokens);

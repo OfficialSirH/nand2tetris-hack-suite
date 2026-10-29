@@ -13,23 +13,21 @@ fn main() {
     let args = std::env::args();
     let (input_name, output_name, execute) = get_program_actions(get_args(args));
     let assembly = get_file_contents(input_name);
-    let bytes = execute(assembly);
-    write_code_to_file(output_name, bytes);
+    let code = execute(assembly);
+    write_code_to_file(output_name, code);
 }
 
 fn get_program_actions(
     (program, input_name, output_name): (String, Option<String>, Option<String>),
-) -> (String, String, fn(Vec<String>) -> Vec<u8>) {
+) -> (String, String, fn(Vec<String>) -> Vec<String>) {
     let get_program_action =
-        |input_default: &str, output_default: &str, executor: fn(Vec<String>) -> Vec<u8>| {
+        |input_default: &str, output_default: &str, executor: fn(Vec<String>) -> Vec<String>| {
             (
                 input_name.unwrap_or(input_default.to_owned()),
                 output_name.unwrap_or(output_default.to_owned()),
                 executor,
             )
         };
-    // TODO: All program functions should output Vec<String> as transformation to their
-    // bytes for file writing should only be done after desired steps are done
     match program.as_str() {
         ASSEMBLE => get_program_action(
             assembler::DEFAULT_INPUT_NAME,
@@ -53,8 +51,12 @@ fn get_program_actions(
     }
 }
 
-fn write_code_to_file(output_name: String, bytes: Vec<u8>) {
+fn write_code_to_file(output_name: String, code: Vec<String>) {
     let mut file = BufWriter::new(File::create(output_name).expect("Failed to create file"));
+    let bytes = code
+        .into_iter()
+        .flat_map(|line| line.into_bytes())
+        .collect::<Vec<u8>>();
     file.write_all(&bytes)
         .expect("Failed to write buffer to file");
 }

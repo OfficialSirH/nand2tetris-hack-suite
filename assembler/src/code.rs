@@ -5,10 +5,10 @@ use crate::{
     tokens::Jump,
 };
 
-pub fn generate(assembly: Vec<Instruction>) -> Vec<u8> {
+pub fn generate(assembly: Vec<Instruction>) -> Vec<String> {
     assembly
         .into_iter()
-        .flat_map(|code| code.translate().to_be_bytes())
+        .map(|code| format!("{:016b}", code.translate()))
         .collect()
 }
 
@@ -137,7 +137,7 @@ D;JGE
             ",
         ))));
 
-        let expected_code: Vec<u8> = vec![
+        let expected_code = vec![
             0b0000000000010000,
             0b1110101010001000,
             0b0000000000010001,
@@ -159,13 +159,13 @@ D;JGE
             0b1110001100000011,
         ]
         .into_iter()
-        .flat_map(|word: u16| word.to_be_bytes())
-        .collect();
+        .map(|word: u16| format!("{:016b}", word))
+        .collect::<Vec<String>>();
 
         code.iter()
             .zip(&expected_code)
-            .for_each(|(byte, expected_byte)| {
-                println!("Generated: {byte:08b}\nGExpected: {expected_byte:08b}")
+            .for_each(|(word, expected_word)| {
+                println!("Generated: {word}\n Expected: {expected_word}")
             });
         assert_eq!(code, expected_code);
     }

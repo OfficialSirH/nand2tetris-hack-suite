@@ -1,5 +1,7 @@
-/target
+**/target/
 .direnv/
 .envrc
-prog.asm
 prog.hack
+prog.asm
+prog.vm
+prog.jack

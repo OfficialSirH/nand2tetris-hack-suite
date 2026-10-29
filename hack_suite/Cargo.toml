@@ -1,0 +1,9 @@
+[package]
+name = "hack"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+assembler = { path = "../assembler" }
+vm_translator = { path = "../vm_translator" }
+compiler = { path = "../compiler" }
